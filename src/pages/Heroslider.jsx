@@ -63,14 +63,11 @@ const HeroSlider = () => {
               />
             </div>
 
-            {/* फोटो के ऊपर की ब्लैक शैडो को पूरी तरह हटा दिया गया है */}
             <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/70 via-transparent to-transparent"></div>
 
             <div className="absolute inset-0 flex items-center">
               <div className="max-w-7xl mx-auto w-full px-8 md:px-16 lg:px-24 text-white">
                 
-                {/* 'SAHIII • Exclusive 2026' वाला बैज यहाँ से हटा दिया गया है */}
-
                 <div className={`overflow-hidden transition-all duration-700 delay-200 ${
                   isActive ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
                 }`}>

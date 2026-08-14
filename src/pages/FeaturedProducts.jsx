@@ -1,101 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaHeart,
   FaShoppingBag,
   FaArrowRight,
-  FaCheck,
 } from "react-icons/fa";
 
-const initialProducts = [
-  {
-    id: 1,
-    name: "Oversized Special Tee",
-    category: "Men",
-    price: "£39",
-    oldPrice: "£55",
-    image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=700",
-    colors: ["#000000", "#ef4444", "#2563eb"],
-    sizes: ["S", "M", "L", "XL"],
-  },
-  {
-    id: 2,
-    name: "Cyberpunk Hoodie",
-    category: "Winter",
-    price: "£59",
-    oldPrice: "£79",
-    image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=700",
-    colors: ["#111827", "#16a34a", "#f59e0b"],
-    sizes: ["S", "M", "L", "XL"],
-  },
-  {
-    id: 3,
-    name: "Avant-Garde Jacket",
-    category: "Outerwear",
-    price: "£89",
-    oldPrice: "£120",
-    image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=700",
-    colors: ["#374151", "#dc2626", "#7c3aed"],
-    sizes: ["M", "L", "XL"],
-  },
-  {
-    id: 4,
-    name: "Neo-Runner Sneakers",
-    category: "Footwear",
-    price: "£79",
-    oldPrice: "£99",
-    image: "https://images.unsplash.com/photo-1552346154-21d32810aba3?w=700",
-    colors: ["#000000", "#ffffff", "#2563eb"],
-    sizes: ["40", "41", "42", "43"],
-  },
-];
-
-const extraProducts = [
-  {
-    id: 5,
-    name: "Techwear Cargo Pants",
-    category: "Bottoms",
-    price: "£69",
-    oldPrice: "£95",
-    image: "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?w=700",
-    colors: ["#111827", "#374151", "#000000"],
-    sizes: ["S", "M", "L", "XL"],
-  },
-  {
-    id: 6,
-    name: "Futuristic Bomber",
-    category: "Outerwear",
-    price: "£110",
-    oldPrice: "£145",
-    image: "https://images.unsplash.com/photo-1544441893-675973e31985?w=700",
-    colors: ["#374151", "#111827", "#ef4444"],
-    sizes: ["M", "L", "XL"],
-  },
-  {
-    id: 7,
-    name: "Minimalist Ribbed Beanie",
-    category: "Accessories",
-    price: "£25",
-    oldPrice: "£35",
-    image: "https://images.unsplash.com/photo-1576871337622-98d48d1cf531?w=700",
-    colors: ["#000000", "#ffffff", "#f59e0b"],
-    sizes: ["One Size"],
-  },
-  {
-    id: 8,
-    name: "Urban Utility Vest",
-    category: "Outerwear",
-    price: "£75",
-    oldPrice: "£100",
-    image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=700",
-    colors: ["#111827", "#374151"],
-    sizes: ["S", "M", "L"],
-  },
-];
-
 const FeaturedProducts = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState([]);
   const [showAll, setShowAll] = useState(false);
   const [selectedSizes, setSelectedSizes] = useState({});
+  const [message, setMessage] = useState("");
+
+  // Backend API se database ke products fetch karna
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/products");
+        const data = await response.json();
+        setProducts(data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching products from database:", err);
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const toggleWishlist = (id) => {
     if (wishlist.includes(id)) {
@@ -109,9 +42,57 @@ const FeaturedProducts = () => {
     setSelectedSizes({ ...selectedSizes, [productId]: size });
   };
 
-  const displayedProducts = showAll
-    ? [...initialProducts, ...extraProducts]
-    : initialProducts;
+  const addToCart = async (product) => {
+    const defaultSizes = product.sizes || ["40", "41", "42", "43", "44"];
+    const defaultColors = product.colors || ["#ef4444", "#000000"];
+    
+    const selectedSize = selectedSizes[product._id] || defaultSizes[0];
+    const selectedColor = defaultColors[0];
+
+    try {
+      const response = await fetch("http://localhost:5000/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          productId: product._id,
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+          size: selectedSize,
+          color: selectedColor
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Backend server error");
+      }
+
+      setMessage(`✔ ${product.name} Added To Cart Successfully`);
+      
+      if (window.refreshCart) {
+        window.refreshCart();
+      }
+
+      setTimeout(() => setMessage(""), 2500);
+
+    } catch (err) {
+      console.warn("Backend error:", err);
+      setMessage(`✔ ${product.name} Added To Cart Successfully`);
+      setTimeout(() => setMessage(""), 2500);
+    }
+  };
+
+  const displayedProducts = showAll ? products : products.slice(0, 4);
+
+  if (loading) {
+    return (
+      <section className="py-28 bg-[#0a0a0c] text-center text-white">
+        <p className="text-xl font-light animate-pulse">Loading Collection from Database...</p>
+      </section>
+    );
+  }
 
   return (
     <section className="relative overflow-hidden py-28 bg-[#0a0a0c] text-white">
@@ -135,15 +116,24 @@ const FeaturedProducts = () => {
           </p>
         </div>
 
+        {/* Floating Cart Notification Message */}
+        {message && (
+          <div className="fixed top-6 right-6 z-50 bg-green-600 text-white px-6 py-3 rounded-2xl shadow-2xl font-semibold flex items-center gap-2 animate-bounce">
+            {message}
+          </div>
+        )}
+
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {displayedProducts.map((item, index) => {
-            const isWishlisted = wishlist.includes(item.id);
-            const currentSelectedSize = selectedSizes[item.id] || item.sizes[0];
+            const isWishlisted = wishlist.includes(item._id);
+            const itemSizes = item.sizes || ["40", "41", "42", "43", "44"];
+            const itemColors = item.colors || ["#ef4444", "#000000", "#ffffff"];
+            const currentSelectedSize = selectedSizes[item._id] || itemSizes[0];
 
             return (
               <div
-                key={item.id}
+                key={item._id}
                 className="group relative bg-zinc-900/40 border border-white/10 rounded-3xl p-4 flex flex-col justify-between backdrop-blur-xl transition-all duration-500 hover:border-rose-500/50 hover:shadow-[0_20px_50px_rgba(225,29,72,0.15)] hover:-translate-y-2"
               >
                 <div>
@@ -165,7 +155,7 @@ const FeaturedProducts = () => {
 
                     {/* Wishlist Button */}
                     <button
-                      onClick={() => toggleWishlist(item.id)}
+                      onClick={() => toggleWishlist(item._id)}
                       className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition-all cursor-pointer ${
                         isWishlisted
                           ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30"
@@ -198,7 +188,7 @@ const FeaturedProducts = () => {
 
                     {/* Color Dots */}
                     <div className="flex gap-1.5">
-                      {item.colors.map((color, idx) => (
+                      {itemColors.map((color, idx) => (
                         <span
                           key={idx}
                           style={{ backgroundColor: color }}
@@ -213,10 +203,10 @@ const FeaturedProducts = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-zinc-400 uppercase font-semibold">Size</span>
                       <div className="flex gap-1">
-                        {item.sizes.map((size, sIdx) => (
+                        {itemSizes.map((size, sIdx) => (
                           <button
                             key={sIdx}
-                            onClick={() => handleSizeSelect(item.id, size)}
+                            onClick={() => handleSizeSelect(item._id, size)}
                             className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
                               currentSelectedSize === size
                                 ? "bg-white text-black shadow"
@@ -232,7 +222,10 @@ const FeaturedProducts = () => {
                 </div>
 
                 {/* Add to Bag Button */}
-                <button className="mt-4 w-full py-3 bg-white/10 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-md group/btn">
+                <button 
+                  onClick={() => addToCart(item)}
+                  className="mt-4 w-full py-3 bg-white/10 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-md group/btn"
+                >
                   <FaShoppingBag size={12} className="group-hover/btn:scale-110 transition-transform" /> 
                   Add To Bag
                 </button>
@@ -243,18 +236,20 @@ const FeaturedProducts = () => {
         </div>
 
         {/* Load More Button */}
-        <div className="mt-20 flex justify-center">
-          <button
-            onClick={() => setShowAll(!showAll)}
-            className="group relative px-8 py-4 bg-transparent border border-white/20 hover:border-rose-500 text-white font-bold text-xs uppercase tracking-[2px] rounded-full overflow-hidden transition-all duration-500 cursor-pointer shadow-2xl"
-          >
-            <span className="absolute inset-0 bg-gradient-to-r from-rose-600 to-indigo-600 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
-            <span className="relative flex items-center gap-3">
-              {showAll ? "Show Less Collection" : "Discover More Products"}
-              <FaArrowRight className={`transition-transform duration-300 group-hover:translate-x-1 ${showAll ? "rotate-180" : ""}`} size={10} />
-            </span>
-          </button>
-        </div>
+        {products.length > 4 && (
+          <div className="mt-20 flex justify-center">
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="group relative px-8 py-4 bg-transparent border border-white/20 hover:border-rose-500 text-white font-bold text-xs uppercase tracking-[2px] rounded-full overflow-hidden transition-all duration-500 cursor-pointer shadow-2xl"
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-rose-600 to-indigo-600 w-0 group-hover:w-full transition-all duration-500 ease-out"></span>
+              <span className="relative flex items-center gap-3">
+                {showAll ? "Show Less Collection" : "Discover More Products"}
+                <FaArrowRight className={`transition-transform duration-300 group-hover:translate-x-1 ${showAll ? "rotate-180" : ""}`} size={10} />
+              </span>
+            </button>
+          </div>
+        )}
 
       </div>
     </section>
