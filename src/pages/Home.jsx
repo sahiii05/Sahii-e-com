@@ -1,6 +1,6 @@
 import React from "react";
+import HeroSlider from "./Heroslider";
 
-import HeroSlider from "./HeroSlider";
 import Categories from "./Categories";
 import FeaturedProducts from "./FeaturedProducts";
 import PromotionalBanner from "./PromotionalBanner";
